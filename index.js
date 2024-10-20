@@ -2,8 +2,10 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const fs = require('fs');
 const path = require('path');
+const axios = require('axios');
 const { handleMessage } = require('./handles/handleMessage');
 const { handlePostback } = require('./handles/handlePostback');
+const config = require('./config.json'); // Import config.json
 
 const app = express();
 app.use(bodyParser.json());
@@ -16,10 +18,46 @@ const colors = {
 };
 
 const VERIFY_TOKEN = 'pagebot';
-const config = require('./config.json'); // Import config.json
 
 // Serve static files from the Music directory
 app.use(express.static(path.join(__dirname, 'Music')));
+
+// Load and set menu commands
+const loadMenuCommands = async () => {
+  try {
+    const commandsDir = path.join(__dirname, 'commands');
+    const commandFiles = fs.readdirSync(commandsDir).filter(file => file.endsWith('.js'));
+
+    const commandsList = commandFiles.map(file => {
+      const command = require(path.join(commandsDir, file));
+      return { name: command.name, description: command.description || 'No description available' };
+    });
+
+    const loadCmd = await axios.post(`https://graph.facebook.com/v21.0/me/messenger_profile?access_token=${config.pageAccessToken}`, {
+      commands: [
+        {
+          locale: "default",
+          commands: commandsList
+        }
+      ]
+    }, {
+      headers: {
+        "Content-Type": "application/json"
+      }
+    });
+
+    if (loadCmd.data.result === "success") {
+      console.log("Commands loaded!");
+    } else {
+      console.log("Failed to load commands");
+    }
+  } catch (error) {
+    console.error('Error loading commands:', error);
+  }
+};
+
+// Call the loadMenuCommands function to load the commands on startup
+loadMenuCommands();
 
 // Endpoint for Facebook webhook verification
 app.get('/webhook', (req, res) => {
@@ -74,7 +112,6 @@ function logTime() {
     const currentTime = new Date().toLocaleString('en-PH', options);
     const logMessage = `Current time (PH): ${currentTime}\n`;
     console.log(logMessage);
-
 } 
 
 // Log the time immediately
@@ -85,5 +122,6 @@ setInterval(logTime, 60 * 60 * 1000);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`${colors.red} Bot Owner: ${config.owner}`); // Access admin property from config.json
+    console.log(`${colors.red} Bot Owner: ${config.owner}`); // Access owner property from config.json
 });
+        
