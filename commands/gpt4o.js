@@ -3,6 +3,7 @@ const axios = require('axios');
 module.exports = {
   name: 'gpt4o',
   description: 'Conversational GPT-4 with attachments support',
+  role: 1,
   author: 'Jay',
 
   async execute(senderId, args, pageAccessToken, sendMessage) {
