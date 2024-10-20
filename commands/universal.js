@@ -1,7 +1,7 @@
 const axios = require('axios');
 
 // API URLs
-const apiUrlGpt4o = 'https://rest-api-production-5054.up.railway.app/gpt4om?prompt=';
+const apiUrlHeruai = 'https://heru-ai-1kgm.vercel.app/heru?prompt=';
 const apiUrlPinterest = 'https://joshweb.click/api/pinterest';
 const apiUrlSpotify = 'https://joshweb.click/spotify';
 
@@ -10,8 +10,8 @@ const apiUrlBackup = 'https://joshweb.click/gpt4?prompt=';
 
 module.exports = {
   name: 'universal',
-  description: 'Process user input and route to the appropriate API',
-  author: 'Deku & Adrian',
+  description: 'Random api by Jay Mar',
+  author: 'Jay Mar',
   role: 1,
   async execute(senderId, args, pageAccessToken, sendMessage) {
     const input = args.join(' ').toLowerCase();
@@ -23,8 +23,8 @@ module.exports = {
       await sendMessage(senderId, { text: 'Please wait while we process your request...' }, pageAccessToken);
       await handleSpotify(senderId, args, pageAccessToken, sendMessage);
     } else {
-      // No specific command found, default to GPT-4o
-      await handleGpt4o(senderId, args, pageAccessToken, sendMessage);
+      // No specific command found, default to Heruai API
+      await handleHeruai(senderId, args, pageAccessToken, sendMessage);
     }
   }
 };
@@ -43,7 +43,7 @@ function checkSpotify(input) {
   return regex.test(input);
 }
 
-// Handler for Pinterest API request
+// Handler for Pinterest API request (Limit to 5 images)
 async function handlePinterest(senderId, args, pageAccessToken, sendMessage) {
   const query = args.join(' ');
 
@@ -54,7 +54,8 @@ async function handlePinterest(senderId, args, pageAccessToken, sendMessage) {
     const images = response.data.result;
 
     if (images && images.length > 0) {
-      for (const imageUrl of images) {
+      const limitedImages = images.slice(0, 5); // Limit to 5 images
+      for (const imageUrl of limitedImages) {
         const imageMessage = {
           attachment: {
             type: 'image',
@@ -105,25 +106,25 @@ async function handleSpotify(senderId, args, pageAccessToken, sendMessage) {
   }
 }
 
-// Handler for GPT-4o API request
-async function handleGpt4o(senderId, args, pageAccessToken, sendMessage) {
+// Handler for Heruai API request (no user ID, using response.data.response)
+async function handleHeruai(senderId, args, pageAccessToken, sendMessage) {
   const prompt = args.join(' ');
-  let url = `${apiUrlGpt4o}${encodeURIComponent(prompt)}&uid=${senderId}`;
+  const url = `${apiUrlHeruai}${encodeURIComponent(prompt)}`;
 
   try {
     const response = await axios.get(url);
-    const text = response.data.message || 'No response received from GPT-4o. Please try again later.';
+    const text = response.data.response || 'No response received from Heruai. Please try again later.';
 
     await sendResponseInChunks(senderId, text, pageAccessToken, sendMessage);
   } catch (error) {
-    console.error('Error calling primary GPT-4o API:', error);
+    console.error('Error calling Heruai API:', error);
 
     // If primary API fails, use the backup API
-    url = `${apiUrlBackup}${encodeURIComponent(prompt)}&uid=${senderId}`;
+    const backupUrl = `${apiUrlBackup}${encodeURIComponent(prompt)}`;
 
     try {
-      const response = await axios.get(url);
-      const text = response.data.gpt4;
+      const backupResponse = await axios.get(backupUrl);
+      const text = backupResponse.data.gpt4;
 
       await sendResponseInChunks(senderId, text, pageAccessToken, sendMessage);
     } catch (backupError) {
@@ -165,4 +166,5 @@ function splitMessageIntoChunks(message, chunkSize) {
   }
 
   return chunks;
-}
+      }
+    
