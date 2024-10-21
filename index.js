@@ -35,16 +35,17 @@ const setGetStartedButton = async () => {
       }
     });
 
+    console.log(response.data);  // Log the full response to check for any errors
+
     if (response.data.result === "success") {
       console.log("Get Started button set successfully!");
     } else {
       console.log("Failed to set Get Started button");
     }
   } catch (error) {
-    console.error('Error setting Get Started button:', error);
+    console.error('Error setting Get Started button:', error.response ? error.response.data : error.message);
   }
 };
-
 const loadMenuCommands = async () => {
   try {
     const commandsDir = path.join(__dirname, 'commands');
