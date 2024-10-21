@@ -1,37 +1,49 @@
-const axios = require('axios');
+const axios = require("axios");
 
 module.exports = {
-  name: 'spotify',
-  description: 'Get a Spotify link for a song',
-  author: 'Deku (rest api)',
+  name: "spotify",
+  description: "Search for a Spotify track using a keyword",
   role: 1,
+  author: "developer",
+
   async execute(senderId, args, pageAccessToken, sendMessage) {
-    const query = args.join(' ');
+    const searchQuery = args.join(" ");
+
+    if (!searchQuery) {
+      return sendMessage(senderId, {
+        text: `Usage: spotify [music title]`
+      }, pageAccessToken);
+    }
 
     try {
-      const apiUrl = `https://joshweb.click/search/spotify?q=${encodeURIComponent(query)}`;
-      const response = await axios.get(apiUrl);
+      const res = await axios.get('https://hiroshi-api.onrender.com/tiktok/spotify', {
+        params: { search: searchQuery }
+      });
 
-      // Extract the Spotify link from the response
-      const spotifyLink = response.data.result;
-
-      if (spotifyLink) {
-        // Send the MP3 file as an attachment
-        sendMessage(senderId, {
-          attachment: {
-            type: 'audio',
-            payload: {
-              url: spotifyLink,
-              is_reusable: true
-            }
-          }
-        }, pageAccessToken);
-      } else {
-        sendMessage(senderId, { text: 'Sorry, no Spotify link found for that query.' }, pageAccessToken);
+      if (!res || !res.data || res.data.length === 0) {
+        throw new Error("No results found");
       }
+
+      const { name: trackName, download, image, track } = res.data[0];
+
+      await sendMessage(senderId, {
+        text: `🎶 Now playing: ${trackName}\n\n🔗 Spotify Link: ${track}`
+      }, pageAccessToken);
+
+      await sendMessage(senderId, {
+        attachment: {
+          type: "audio",
+          payload: {
+            url: download
+          }
+        }
+      }, pageAccessToken);
+
     } catch (error) {
-      console.error('Error retrieving Spotify link:', error);
-      sendMessage(senderId, { text: 'Sorry, there was an error processing your request.' }, pageAccessToken);
+      console.error("Error retrieving the Spotify track:", error);
+      sendMessage(senderId, {
+        text: `Error retrieving the Spotify track. Please try again or check your input.`
+      }, pageAccessToken);
     }
   }
 };
