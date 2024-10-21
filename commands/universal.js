@@ -54,7 +54,7 @@ async function handlePinterest(senderId, args, pageAccessToken, sendMessage) {
     const images = response.data.result;
 
     if (images && images.length > 0) {
-      const limitedImages = images.slice(0, 3); // Limit to 5 images
+      const limitedImages = images.slice(0, 1); // Limit to 5 images
       for (const imageUrl of limitedImages) {
         const imageMessage = {
           attachment: {
